@@ -53,7 +53,7 @@ export default function AICompanion() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, []);  // loadConversationHistory is called inside the effect
 
   // Setup user data in Firestore
   const setupUserData = async (user: User) => {
@@ -74,7 +74,7 @@ export default function AICompanion() {
     } else {
       const userData = userSnap.data();
       const today = new Date().toISOString().split('T')[0];
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         lastLogin: serverTimestamp()
       };
       
@@ -99,9 +99,9 @@ export default function AICompanion() {
         setConversationHistory(history);
         
         // Render messages (skip system and first AI greeting)
-        const chatMessages = history.filter((msg: any, index: number) => 
+        const chatMessages = history.filter((msg: { role: string }, index: number) => 
           msg.role !== 'system' && index > 0
-        ).map((msg: any, index: number) => ({
+        ).map((msg: { role: string; content: string }, index: number) => ({
           id: index + 2,
           content: msg.content,
           sender: msg.role === 'user' ? 'user' : 'ai',
@@ -170,9 +170,9 @@ export default function AICompanion() {
         await signInWithEmailAndPassword(auth, email, password);
       }
       setShowModal(false);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Email auth error:', error);
-      alert(error.message);
+      alert('Error de autenticación');
     }
   };
 
@@ -264,7 +264,7 @@ export default function AICompanion() {
   };
 
   // Save conversation to Firestore
-  const saveConversation = async (user: User, history: any[]) => {
+  const saveConversation = async (user: User, history: { role: string; content: string }[]) => {
     try {
       const conversationRef = doc(db, 'conversations', user.uid);
       await setDoc(conversationRef, {
@@ -437,9 +437,12 @@ export default function AICompanion() {
           <div className="text-xl font-semibold text-gray-900">Learning Heroes</div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <img 
-                src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || '')}&background=007aff&color=fff`}
-                alt="Avatar"
+              <div 
+                style={{
+                  backgroundImage: `url(${user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || '')}&background=007aff&color=fff`})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}
                 className="w-8 h-8 rounded-full"
               />
               <span className="text-gray-700">{user.displayName || user.email}</span>
